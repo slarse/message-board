@@ -1,7 +1,7 @@
 package app_test
 
 import (
-	"backend-test-template/app"
+	"message-board-backend/app"
 	"bytes"
 	"encoding/json"
 	"net/http"

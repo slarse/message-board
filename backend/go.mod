@@ -1,4 +1,4 @@
-module backend-test-template
+module message-board-backend
 
 go 1.18
 
