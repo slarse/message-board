@@ -10,19 +10,36 @@ import (
 type Application struct {
 	Router *mux.Router
 	// TODO: Add storage for messages
+	messages []Message
 }
 
 type Message struct {
 	Id        int    `json:"id"`
-	ParentId  int    `json:"parentId"`
+	ParentId  *int   `json:"parentId,omitempty"`
 	Author    string `json:"author"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
 	CreatedAt string `json:"createdAt"`
 }
 
+type ParentId struct {
+	Value int
+	Valid bool
+}
+
 func NewApplication(r *mux.Router, frontendPath string) *Application {
-	myApp := &Application{Router: r}
+	one := 1
+	three := 3
+
+	messages := []Message{
+		{Id: 1, ParentId: nil, Author: "John", Title: "First!", Content: "Hello World!", CreatedAt: "2020-01-01 12:00:00"},
+		{Id: 2, ParentId: nil, Author: "Jane", Title: "Second!", Content: "Hello John!", CreatedAt: "2020-01-01 12:00:01"},
+		{Id: 3, ParentId: &one, Author: "Jane", Title: "", Content: "Hello John! Accidentally made a completely new post :)", CreatedAt: "2020-01-01 12:00:02"},
+		{Id: 4, ParentId: &three, Author: "John", Title: "", Content: "I get it. The UX of this board is kind of terrible.", CreatedAt: "2020-01-01 12:00:03"},
+		{Id: 5, ParentId: &one, Author: "Paul", Title: "", Content: "Hi there, John!", CreatedAt: "2020-01-01 12:00:04"},
+	}
+
+	myApp := &Application{Router: r, messages: messages}
 	myApp.setupRoutes(frontendPath)
 	return myApp
 }
@@ -39,11 +56,7 @@ func (a *Application) setupRoutes(frontendPath string) {
 }
 
 func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
-	messages := []Message{
-		{Id: 2, ParentId: 1, Author: "Jane", Title: "Second!", Content: "Hello John!", CreatedAt: "2020-01-01 12:00:01"},
-		{Id: 1, ParentId: 0, Author: "John", Title: "First!", Content: "Hello World!", CreatedAt: "2020-01-01 12:00:00"},
-	}
-	json.NewEncoder(w).Encode(messages)
+	json.NewEncoder(w).Encode(a.messages)
 }
 
 func (a *Application) getHealth(w http.ResponseWriter, r *http.Request) {

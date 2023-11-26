@@ -1,4 +1,13 @@
-import { Box, Card, CardContent, Typography } from "@mui/material";
+import { AddCircle, AddComment, Delete } from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  Typography,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 
 export function Messages() {
@@ -10,20 +19,60 @@ export function Messages() {
       .then((data) => setMessages(data));
   }, []);
 
-  return <MessageList messages={messages} />;
-}
-
-type MessageListProps = {
-  messages: MessageData[];
-};
-
-function MessageList(props: MessageListProps) {
-  const { messages } = props;
+  const rootMessages = messages.filter(
+    (message) => message.parentId === undefined,
+  );
+  const comments = buildCommentsByMessageId(messages);
 
   return (
+    <MessageTree rootMessages={rootMessages} comments={comments} level={1} />
+  );
+}
+
+type CommentsByMessageId = Map<number, MessageData[]>;
+
+function buildCommentsByMessageId(messages: MessageData[]): CommentsByMessageId {
+  const commentsByMessageId = new Map();
+  for (const message of messages) {
+    if (message.parentId === undefined) {
+      continue;
+    }
+
+    const comments = commentsByMessageId.get(message.parentId) ?? [];
+    comments.push(message);
+    commentsByMessageId.set(message.parentId, comments);
+  }
+
+  return commentsByMessageId;
+}
+
+type MessageTreeProps = {
+  rootMessages: MessageData[];
+  comments: CommentsByMessageId;
+  level: number;
+};
+
+function MessageTree(props: MessageTreeProps) {
+  const { rootMessages, comments, level } = props;
+
+  return rootMessages.length == 0 ? null : (
     <Box>
-      {messages.map((message) => (
-        <MessageOverview key={message.id} message={message} />
+      {rootMessages.map((message) => (
+        <Card sx={{ marginBottom: 2, marginTop: 2 }}>
+          <MessageOverview message={message} />
+          <CardActions sx={{ margin: 2 }}>
+            <Button startIcon={<AddComment />}>Reply</Button>
+            <Button startIcon={<AddCircle />}>Load Comments</Button>
+            <Button startIcon={<Delete />}>Delete</Button>
+          </CardActions>
+          <Card sx={{ paddingLeft: 2 * level }}>
+            <MessageTree
+              rootMessages={comments.get(message.id) || []}
+              comments={comments}
+              level={level + 1}
+            />
+          </Card>
+        </Card>
       ))}
     </Box>
   );
@@ -31,10 +80,11 @@ function MessageList(props: MessageListProps) {
 
 type MessageData = {
   id: number;
+  parentId?: number;
   content: string;
   title: string;
   author: string;
-	createdAt: string;
+  createdAt: string;
 };
 
 type MessageOverviewProps = {
@@ -45,12 +95,16 @@ function MessageOverview(props: MessageOverviewProps) {
   const { message } = props;
 
   return (
-    <Card variant="elevation" sx={{ marginBottom: 2 }}>
-      <CardContent>
+    <>
+      <CardHeader>
         <Typography variant="h4">{message.title}</Typography>
-        <Typography variant="h6">{message.author} {message.createdAt}</Typography>
+      </CardHeader>
+      <CardContent>
+        <Typography variant="h6">
+          {message.author} {message.createdAt}
+        </Typography>
         <Typography variant="body1">{message.content}</Typography>
       </CardContent>
-    </Card>
+    </>
   );
 }
