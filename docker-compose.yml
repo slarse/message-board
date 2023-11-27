@@ -38,13 +38,17 @@ services:
     networks:
       - message-board
     environment:
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      POSTGRES_DB: "${POSTGRES_DB}"
+      DB_USER: "${POSTGRES_USER}"
+      DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      DB_NAME: "${POSTGRES_DB}"
+      DB_HOST: database
+      DB_PORT: 5432
       PORT: 8000
     ports:
       - "8000:8000"
-
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 networks:
   message-board:

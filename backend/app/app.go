@@ -5,21 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	"log"
 )
 
 type Application struct {
-	Router *mux.Router
-	// TODO: Add storage for messages
-	messages []Message
+	Router   *mux.Router
+	Database *sqlx.DB
 }
 
 type Message struct {
-	Id        int    `json:"id"`
-	ParentId  *int   `json:"parentId,omitempty"`
-	Author    string `json:"author"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	CreatedAt string `json:"createdAt"`
+	Id        int    `json:"id" db:"id"`
+	ParentId  *int   `json:"parentId,omitempty" db:"parent_id"`
+	Author    string `json:"author" db:"username"`
+	Title     string `json:"title" db:"title"`
+	Content   string `json:"content" db:"content"`
+	CreatedAt string `json:"createdAt" db:"created_at"`
 }
 
 type ParentId struct {
@@ -27,19 +28,8 @@ type ParentId struct {
 	Valid bool
 }
 
-func NewApplication(r *mux.Router, frontendPath string) *Application {
-	one := 1
-	three := 3
-
-	messages := []Message{
-		{Id: 1, ParentId: nil, Author: "John", Title: "First!", Content: "Hello World!", CreatedAt: "2020-01-01 12:00:00"},
-		{Id: 2, ParentId: nil, Author: "Jane", Title: "Second!", Content: "Hello John!", CreatedAt: "2020-01-01 12:00:01"},
-		{Id: 3, ParentId: &one, Author: "Jane", Title: "", Content: "Hello John! Accidentally made a completely new post :)", CreatedAt: "2020-01-01 12:00:02"},
-		{Id: 4, ParentId: &three, Author: "John", Title: "", Content: "I get it. The UX of this board is kind of terrible.", CreatedAt: "2020-01-01 12:00:03"},
-		{Id: 5, ParentId: &one, Author: "Paul", Title: "", Content: "Hi there, John!", CreatedAt: "2020-01-01 12:00:04"},
-	}
-
-	myApp := &Application{Router: r, messages: messages}
+func NewApplication(r *mux.Router, frontendPath string, db *sqlx.DB) *Application {
+	myApp := &Application{Router: r, Database: db}
 	myApp.setupRoutes(frontendPath)
 	return myApp
 }
@@ -56,9 +46,29 @@ func (a *Application) setupRoutes(frontendPath string) {
 }
 
 func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(a.messages)
+	messages, err := a.getMessagesFromDb()
+	if err != nil {
+		log.Printf("Error getting messages from database: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(messages)
 }
 
 func (a *Application) getHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+}
+
+func (a *Application) getMessagesFromDb() ([]Message, error) {
+	var messages []Message
+	err := a.Database.Select(&messages,
+		`SELECT m.id, m.parent_id, a.username, m.title, m.content, m.created_at
+		FROM message m
+		JOIN author a ON m.author_id = a.id`)
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
 }
