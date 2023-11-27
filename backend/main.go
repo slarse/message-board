@@ -20,6 +20,13 @@ func main() {
 		log.Fatalf("%s environment variable not set", FRONTEND_PATH_ENV)
 	}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatalf("PORT environment variable not set")
+	}
+
+	log.Printf("Serving frontend from %s on port %s", frontendPath, port)
+
 	application := app.NewApplication(r, frontendPath)
-	log.Fatal(http.ListenAndServe(":8080", application.Router))
+	log.Fatal(http.ListenAndServe(":" + port, application.Router))
 }
