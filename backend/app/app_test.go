@@ -1,56 +1,55 @@
 package app_test
 
 import (
-	"message-board-backend/app"
-	"bytes"
 	"encoding/json"
+	"message-board-backend/app"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/suite"
 )
 
-func Test_GetComments(t *testing.T) {
-	myApp := app.NewApplication(mux.NewRouter())
-	method := // TODO: Specify the method
-	path := // TODO: Specify the path
-	expectedStatus := // TODO: Specify the expected status
+const (
+	NUM_MESSAGES_IN_DEFAULT_MIGRATION = 5
+)
+
+type AppTestSuite struct {
+	suite.Suite
+	db app.Database
+	frontendPath string
+}
+
+func (suite *AppTestSuite) SetupSuite() {
+	suite.db.Conn.MustExec("BEGIN");
+}
+
+func (suite *AppTestSuite) TearDownSuite() {
+	suite.db.Conn.MustExec("ROLLBACK");
+}
+
+func (suite *AppTestSuite) Test_GetComments() {
+	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
+	method := "GET"
+	path := "/api/messages"
+	expectedStatus := http.StatusOK
 
 	request, err := http.NewRequest(method, path, nil)
-	assert.NoError(t, err)
+	suite.NoError(err)
 	response := httptest.NewRecorder()
 	myApp.Router.ServeHTTP(response, request)
 
-	comments := []app.Comment{}
-	err = json.NewDecoder(response.Body).Decode(&comments)
-	assert.NoError(t, err)
+	messages := []app.Message{}
+	err = json.NewDecoder(response.Body).Decode(&messages)
+	suite.NoError(err)
 
-	// Assert expected results (maybe add more assertions?)
-	assert.Len(t, comments, 0)
-	assert.Equal(t, expectedStatus, response.Code)
+	suite.Len(messages, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
+	suite.Equal(expectedStatus, response.Code)
 }
 
-func Test_CreateComment(t *testing.T) {
-	myApp := app.NewApplication(mux.NewRouter())
-	method := // TODO: Specify the method
-	path := // TODO: Specify the path
-	expectedStatus := // TODO: Specify the expected status
-	body := //TODO: Specify the body
-
-	request, err := http.NewRequest(method, path, bytes.NewReader(body))
-	assert.NoError(t, err)
-	response := httptest.NewRecorder()
-	myApp.Router.ServeHTTP(response, request)
-
-	comments := []app.Comment{}
-	err = json.NewDecoder(response.Body).Decode(&comments)
-	assert.NoError(t, err)
-
-	// Assert expected results (maybe add more assertions?)
-	assert.Len(t, comments, 1)
-	assert.Equal(t, expectedStatus, response.Code)
+func TestAppTesSuite(t *testing.T) {
+	db := app.ConnectDb()
+	suite.Run(t, &AppTestSuite{db: db, frontendPath: "./mocks_index.html"})
 }
-
-// TODO: Write test for getComment, updateComment, deleteComment, ect...

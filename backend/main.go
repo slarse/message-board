@@ -1,15 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"message-board-backend/app"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
 const (
@@ -37,34 +34,7 @@ func main() {
 
 	log.Printf("Serving frontend from %s on port %s", frontendPath, port)
 
-	db := connectDb()
+	db := app.ConnectDb()
 	application := app.NewApplication(r, frontendPath, db)
 	log.Fatal(http.ListenAndServe(":"+port, application.Router))
-}
-
-func connectDb() *sqlx.DB {
-	dbUser := getEnv(DB_USER_ENV)
-	dbPassword := getEnv(DB_PASSWORD_ENV)
-	dbHost := getEnv(DB_HOST_ENV)
-	dbPort := getEnv(DB_PORT_ENV)
-	dbName := getEnv(DB_NAME_ENV)
-
-	connectionString := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName)
-	log.Printf("Connecting to database with connection %s", connectionString)
-	db, err := sqlx.Open("postgres", connectionString)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Connected to database")
-	return db
-}
-
-func getEnv(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		log.Fatalf("%s environment variable not set", key)
-	}
-	return value
 }

@@ -1,4 +1,4 @@
-.PHONY: run-local clean create-migration start start-db-only build
+.PHONY: run-local clean create-migration start start-db-only stop build test-backend
 
 export POSTGRES_USER ?= postgres
 export POSTGRES_PASSWORD ?= postgres
@@ -13,6 +13,9 @@ export DB_NAME ?= ${POSTGRES_DB}
 start: build
 	docker compose up --force-recreate -d
 
+stop:
+	docker compose down
+
 build:
 	docker compose build
 
@@ -24,7 +27,7 @@ dist:
 	mv frontend/dist dist/message-board-frontend
 	go build -C backend -o "${CURDIR}/dist/message-board-backend"
 
-run-local: dist start-db
+run-local: dist start-db-only
 	env MESSAGE_BOARD_FRONTEND_PATH="${CURDIR}/dist/message-board-frontend" PORT=8000 \
 		./dist/message-board-backend
 
@@ -35,6 +38,9 @@ create-migration:
 	docker run --rm \
 		-v ${CURDIR}/backend/migrations:/migrations \
 		migrate/migrate create -ext sql -dir /migrations -seq $(name)
+
+test-backend: start-db-only
+	cd backend && go test -v ./...
 
 clean:
 	rm -rf dist/

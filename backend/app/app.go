@@ -5,13 +5,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"log"
 )
 
 type Application struct {
 	Router   *mux.Router
-	Database *sqlx.DB
+	db Database
 }
 
 type Message struct {
@@ -28,8 +27,8 @@ type ParentId struct {
 	Valid bool
 }
 
-func NewApplication(r *mux.Router, frontendPath string, db *sqlx.DB) *Application {
-	myApp := &Application{Router: r, Database: db}
+func NewApplication(r *mux.Router, frontendPath string, db Database) *Application {
+	myApp := &Application{Router: r, db: db}
 	myApp.setupRoutes(frontendPath)
 	return myApp
 }
@@ -46,7 +45,7 @@ func (a *Application) setupRoutes(frontendPath string) {
 }
 
 func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
-	messages, err := a.getMessagesFromDb()
+	messages, err := a.db.getMessages()
 	if err != nil {
 		log.Printf("Error getting messages from database: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -58,17 +57,4 @@ func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
 
 func (a *Application) getHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"ok": true})
-}
-
-func (a *Application) getMessagesFromDb() ([]Message, error) {
-	var messages []Message
-	err := a.Database.Select(&messages,
-		`SELECT m.id, m.parent_id, a.username, m.title, m.content, m.created_at
-		FROM message m
-		JOIN author a ON m.author_id = a.id`)
-	if err != nil {
-		return nil, err
-	}
-
-	return messages, nil
 }
