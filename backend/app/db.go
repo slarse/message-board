@@ -55,6 +55,24 @@ func (db *Database) getMessages() ([]Message, error) {
 	return messages, nil
 }
 
+func (db *Database) getMessagesByRootMessageId(rootMessageId int) ([]Message, error) {
+	var messages []Message
+	err := db.Conn.Select(&messages,
+		`WITH RECURSIVE message_tree(id, parent_id) AS (
+			SELECT root.id, root.parent_id FROM message root WHERE root.id = $1
+				UNION ALL SELECT child.id, child.parent_id
+				FROM message child, message_tree parents
+				WHERE parents.id = child.parent_id)
+			SELECT * FROM message_tree;`,
+		rootMessageId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}
+
 func GetEnv(key string) string {
 	value := os.Getenv(key)
 	if value == "" {

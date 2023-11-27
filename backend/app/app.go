@@ -3,14 +3,16 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"log"
 
 	"github.com/gorilla/mux"
-	"log"
 )
 
 type Application struct {
-	Router   *mux.Router
-	db Database
+	Router *mux.Router
+	db     Database
 }
 
 type Message struct {
@@ -36,6 +38,7 @@ func NewApplication(r *mux.Router, frontendPath string, db Database) *Applicatio
 func (a *Application) setupRoutes(frontendPath string) {
 	a.Router.HandleFunc("/api/health", a.getHealth).Methods("GET")
 	a.Router.HandleFunc("/api/messages", a.getMessages).Methods("GET")
+	a.Router.HandleFunc("/api/messages/{rootMessageId}", a.getMessagesByRootMessageId).Methods("GET")
 
 	// Normally, we would serve the frontend from a static file server (e.g. an S3 bucket)
 	// with a CDN in front of it (e.g. CloudFront). But for this example we will
@@ -49,6 +52,31 @@ func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error getting messages from database: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(messages)
+}
+
+func (a *Application) getMessagesByRootMessageId(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	rootMessageId, err := strconv.Atoi(vars["rootMessageId"])
+	if err != nil {
+		log.Printf("Invalid rootMessageId: %s", err)
+		http.Error(w, "Invalid rootMessageId", http.StatusBadRequest)
+		return
+	}
+
+	messages, err := a.db.getMessagesByRootMessageId(rootMessageId)
+	if err != nil {
+		log.Printf("Error getting messages from database: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if len(messages) == 0 {
+		log.Printf("No messages for id: %d", rootMessageId)
+		http.NotFound(w, r)
 		return
 	}
 
