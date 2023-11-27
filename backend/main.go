@@ -12,11 +12,6 @@ import (
 const (
 	FRONTEND_PATH_ENV = "MESSAGE_BOARD_FRONTEND_PATH"
 	PORT_ENV          = "PORT"
-	DB_USER_ENV       = "DB_USER"
-	DB_PASSWORD_ENV   = "DB_PASSWORD"
-	DB_HOST_ENV       = "DB_HOST"
-	DB_PORT_ENV       = "DB_PORT"
-	DB_NAME_ENV       = "DB_NAME"
 )
 
 func main() {

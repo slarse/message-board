@@ -73,6 +73,21 @@ func (db *Database) getMessagesByRootMessageId(rootMessageId int) ([]Message, er
 	return messages, nil
 }
 
+func (db *Database) createMessage(message InputMessage) (Message, error) {
+	var createdMessage Message
+	err := db.Conn.QueryRowx(
+		`INSERT INTO message (parent_id, author_id, title, content)
+        VALUES ($1, (SELECT id FROM author WHERE username = $2), $3, $4)
+        RETURNING id, parent_id, $2 as username, title, content, created_at`,
+		message.ParentId, message.Author, message.Title, message.Content).StructScan(&createdMessage)
+
+	if err != nil {
+		return Message{}, err
+	}
+
+	return createdMessage, nil
+}
+
 func GetEnv(key string) string {
 	value := os.Getenv(key)
 	if value == "" {

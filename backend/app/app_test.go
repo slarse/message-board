@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"message-board-backend/app"
 	"net/http"
@@ -25,11 +26,11 @@ type AppTestSuite struct {
 	frontendPath string
 }
 
-func (suite *AppTestSuite) SetupSuite() {
+func (suite *AppTestSuite) BeforeTest(suiteName, testName string) {
 	suite.db.Conn.MustExec("BEGIN")
 }
 
-func (suite *AppTestSuite) TearDownSuite() {
+func (suite *AppTestSuite) AfterTest(suiteName, testName string) {
 	suite.db.Conn.MustExec("ROLLBACK")
 }
 
@@ -98,6 +99,68 @@ func (suite *AppTestSuite) Test_GetMessagesByRootMessageId_NoMessages() {
 	myApp.Router.ServeHTTP(response, request)
 
 	suite.Equal(expectedStatus, response.Code)
+}
+
+func (suite *AppTestSuite) Test_CreateRootMessage() {
+	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
+	method := "POST"
+	path := "/api/messages"
+	expectedStatus := http.StatusCreated
+
+	message := app.InputMessage{
+		Author:  "John",
+		Title:   "Hello",
+		Content: "World",
+	}
+
+	requestBody, err := json.Marshal(message)
+	suite.NoError(err)
+
+	request, err := http.NewRequest(method, path, bytes.NewBuffer(requestBody))
+	suite.NoError(err)
+	response := httptest.NewRecorder()
+	myApp.Router.ServeHTTP(response, request)
+
+	var returnedMessage app.Message
+	err = json.NewDecoder(response.Body).Decode(&returnedMessage)
+	suite.NoError(err)
+
+	suite.Equal(expectedStatus, response.Code)
+	suite.Greater(returnedMessage.Id, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
+	suite.Equal(returnedMessage.Title, message.Title)
+	suite.Equal(returnedMessage.Content, message.Content)
+	suite.Equal(returnedMessage.Author, message.Author)
+	suite.Nil(returnedMessage.ParentId)
+}
+
+func (suite *AppTestSuite) Test_CreateComment() {
+	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
+	method := "POST"
+	path := "/api/messages"
+	expectedStatus := http.StatusCreated
+	one := 1
+
+	message := app.InputMessage{
+		Author:   "John",
+		Content:  "World",
+		ParentId: &one,
+	}
+
+	requestBody, err := json.Marshal(message)
+	suite.NoError(err)
+
+	request, err := http.NewRequest(method, path, bytes.NewBuffer(requestBody))
+	suite.NoError(err)
+	response := httptest.NewRecorder()
+	myApp.Router.ServeHTTP(response, request)
+
+	var returnedMessage app.Message
+	err = json.NewDecoder(response.Body).Decode(&returnedMessage)
+	suite.NoError(err)
+
+	suite.Equal(expectedStatus, response.Code)
+	suite.Greater(returnedMessage.Id, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
+	suite.Equal(returnedMessage.ParentId, message.ParentId)
 }
 
 func TestAppTesSuite(t *testing.T) {

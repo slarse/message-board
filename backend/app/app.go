@@ -15,18 +15,17 @@ type Application struct {
 	db     Database
 }
 
-type Message struct {
-	Id        int    `json:"id" db:"id"`
-	ParentId  *int   `json:"parentId,omitempty" db:"parent_id"`
-	Author    string `json:"author" db:"username"`
-	Title     string `json:"title" db:"title"`
-	Content   string `json:"content" db:"content"`
-	CreatedAt string `json:"createdAt" db:"created_at"`
+type InputMessage struct {
+	ParentId *int   `json:"parentId,omitempty" db:"parent_id"`
+	Author   string `json:"author" db:"username"`
+	Title    string `json:"title" db:"title"`
+	Content  string `json:"content" db:"content"`
 }
 
-type ParentId struct {
-	Value int
-	Valid bool
+type Message struct {
+	InputMessage
+	Id        int    `json:"id" db:"id"`
+	CreatedAt string `json:"createdAt" db:"created_at"`
 }
 
 func NewApplication(r *mux.Router, frontendPath string, db Database) *Application {
@@ -38,6 +37,7 @@ func NewApplication(r *mux.Router, frontendPath string, db Database) *Applicatio
 func (a *Application) setupRoutes(frontendPath string) {
 	a.Router.HandleFunc("/api/health", a.getHealth).Methods("GET")
 	a.Router.HandleFunc("/api/messages", a.getMessages).Methods("GET")
+	a.Router.HandleFunc("/api/messages", a.createMessage).Methods("POST")
 	a.Router.HandleFunc("/api/messages/{rootMessageId}", a.getMessagesByRootMessageId).Methods("GET")
 
 	// Normally, we would serve the frontend from a static file server (e.g. an S3 bucket)
@@ -85,4 +85,24 @@ func (a *Application) getMessagesByRootMessageId(w http.ResponseWriter, r *http.
 
 func (a *Application) getHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+}
+
+func (a *Application) createMessage(w http.ResponseWriter, r *http.Request) {
+	var inputMessage InputMessage
+	err := json.NewDecoder(r.Body).Decode(&inputMessage)
+	if err != nil {
+		log.Printf("Error decoding input message: %s", err)
+		http.Error(w, "Invalid input message", http.StatusBadRequest)
+		return
+	}
+
+	created, err := a.db.createMessage(inputMessage)
+	if err != nil {
+		log.Printf("Error creating message: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(created)
 }
