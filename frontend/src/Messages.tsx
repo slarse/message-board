@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Card,
-  CardActionArea,
   CardActions,
   CardContent,
   CardHeader,
@@ -21,7 +20,7 @@ type MessagesProps = {
 
 export function Messages(props: MessagesProps) {
   const [messages, setMessages] = useState<MessageData[]>([]);
-	const [showMessageForm, setShowMessageForm] = useState(false);
+  const [showMessageForm, setShowMessageForm] = useState(false);
   const { actions } = props;
 
   useEffect(() => {
@@ -37,15 +36,19 @@ export function Messages(props: MessagesProps) {
     );
   };
 
-	const createMessage = async (author: string, title: string, content: string) => {
-		setShowMessageForm(false);
-		await actions.newPost({
-			title,
-			content,
-			author,
-		});
-		await actions.loadMessages().then(setMessages);
-	}
+  const createMessage = async (
+    author: string,
+    title: string,
+    content: string,
+  ) => {
+    setShowMessageForm(false);
+    await actions.newPost({
+      title,
+      content,
+      author,
+    });
+    await actions.loadMessages().then(setMessages);
+  };
 
   return (
     <Box>
@@ -58,14 +61,17 @@ export function Messages(props: MessagesProps) {
           onDelete={() => onDelete(message.id)}
         />
       ))}
-			<Card variant="outlined">
-				<CardContent>
-				<Button variant="contained" onClick={() => setShowMessageForm(show => !show)}>
-					New Message
-				</Button>
-				{showMessageForm && <MessageForm apply={createMessage} />}
-				</CardContent>
-			</Card>
+      <Card variant="outlined">
+        <CardContent>
+          <Button
+            variant="contained"
+            onClick={() => setShowMessageForm((show) => !show)}
+          >
+            New Message
+          </Button>
+          {showMessageForm && <MessageForm apply={createMessage} />}
+        </CardContent>
+      </Card>
     </Box>
   );
 }
@@ -87,10 +93,7 @@ function MessageTree(props: MessageTreeProps) {
     setComments(comments);
   };
 
-  const reply = async (content: string) => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const author = searchParams.get("author") || "John";
-
+  const reply = async (author: string, content: string) => {
     setShowCommentForm(false);
     await actions.reply({
       parentId: message.id,
@@ -147,7 +150,7 @@ type MessageOverviewProps = {
 
 function MessageOverview(props: MessageOverviewProps) {
   const { message } = props;
-	const date = message.createdAt.substring(0, 10).replaceAll("T", " ");
+  const date = message.createdAt.substring(0, 10).replaceAll("T", " ");
 
   return (
     <>
