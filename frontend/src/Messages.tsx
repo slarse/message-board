@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardActions,
   CardContent,
   CardHeader,
@@ -11,7 +12,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { MessageActions, MessageData } from "./MessageActions";
-import { CommentForm } from "./Form";
+import { CommentForm, MessageForm } from "./Form";
 import { red } from "@mui/material/colors";
 
 type MessagesProps = {
@@ -20,6 +21,7 @@ type MessagesProps = {
 
 export function Messages(props: MessagesProps) {
   const [messages, setMessages] = useState<MessageData[]>([]);
+	const [showMessageForm, setShowMessageForm] = useState(false);
   const { actions } = props;
 
   useEffect(() => {
@@ -35,6 +37,16 @@ export function Messages(props: MessagesProps) {
     );
   };
 
+	const createMessage = async (author: string, title: string, content: string) => {
+		setShowMessageForm(false);
+		await actions.newPost({
+			title,
+			content,
+			author,
+		});
+		await actions.loadMessages().then(setMessages);
+	}
+
   return (
     <Box>
       {messages.map((message) => (
@@ -46,6 +58,14 @@ export function Messages(props: MessagesProps) {
           onDelete={() => onDelete(message.id)}
         />
       ))}
+			<Card variant="outlined">
+				<CardContent>
+				<Button variant="contained" onClick={() => setShowMessageForm(show => !show)}>
+					New Message
+				</Button>
+				{showMessageForm && <MessageForm apply={createMessage} />}
+				</CardContent>
+			</Card>
     </Box>
   );
 }

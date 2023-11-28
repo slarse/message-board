@@ -37,30 +37,30 @@ const loadComments = async (messageId: number) => {
   return data;
 };
 
-const reply = async (data: CreateCommentData) => {
-	const response = await fetch(`/api/messages`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(data),
-	});
-	const responseData = await response.json();
-	return responseData;
+const createMessage = async (data: CreateCommentData | CreateMessageData) => {
+  const response = await fetch(`/api/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+  const responseData = await response.json();
+  return responseData;
 };
 
 const deleteMessage = async (messageId: number) => {
-	const response = await fetch(`/api/messages/${messageId}`, {
-		method: "DELETE",
-	});
-	const responseData = await response.json();
-	return responseData;
+  const response = await fetch(`/api/messages/${messageId}`, {
+    method: "DELETE",
+  });
+  const responseData = await response.json();
+  return responseData;
 };
 
 export const defaultMessageActions: MessageActions = {
   loadMessages: loadRootMessages,
   loadComments: loadComments,
-  reply: reply,
-  newPost: (data: CreateMessageData) => Promise.resolve({} as MessageData),
+  reply: createMessage,
+  newPost: createMessage,
   delete: deleteMessage,
 };
