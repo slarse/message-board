@@ -1,5 +1,6 @@
 import { AddCircle, AddComment, Delete } from "@mui/icons-material";
 import {
+  Avatar,
   Box,
   Button,
   Card,
@@ -10,6 +11,8 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { MessageActions, MessageData } from "./MessageActions";
+import { CommentForm } from "./Form";
+import { red } from "@mui/material/colors";
 
 type MessagesProps = {
   actions: MessageActions;
@@ -17,7 +20,6 @@ type MessagesProps = {
 
 export function Messages(props: MessagesProps) {
   const [messages, setMessages] = useState<MessageData[]>([]);
-
   const { actions } = props;
 
   useEffect(() => {
@@ -58,19 +60,24 @@ type MessageTreeProps = {
 function MessageTree(props: MessageTreeProps) {
   const { message, level, actions, onDelete } = props;
   const [comments, setComments] = useState<MessageData[]>([]);
+  const [showCommentForm, setShowCommentForm] = useState(false);
 
   const loadComments = async () => {
     const comments = await actions.loadComments(message.id);
     setComments(comments);
   };
 
-  const reply = async () => {
-    const comment = await actions.reply({
+  const reply = async (content: string) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const author = searchParams.get("author") || "John";
+
+    setShowCommentForm(false);
+    await actions.reply({
       parentId: message.id,
-      content: `Re: ${message.content}`,
-      author: "Paul",
+      content,
+      author,
     });
-    setComments([...comments, comment]);
+    await loadComments();
   };
 
   const onDeleteComment = async (messageId: number) => {
@@ -86,7 +93,10 @@ function MessageTree(props: MessageTreeProps) {
     <Card variant="outlined" sx={{ marginBottom: 2, marginTop: 2 }}>
       <MessageOverview message={message} />
       <CardActions sx={{ margin: 2 }}>
-        <Button startIcon={<AddComment />} onClick={reply}>
+        <Button
+          startIcon={<AddComment />}
+          onClick={() => setShowCommentForm((show) => !show)}
+        >
           Reply
         </Button>
         <Button startIcon={<AddCircle />} onClick={loadComments}>
@@ -96,6 +106,7 @@ function MessageTree(props: MessageTreeProps) {
           Delete
         </Button>
       </CardActions>
+      {showCommentForm && <CommentForm apply={reply} />}
       <Card sx={{ paddingLeft: 2 * level, paddingRight: 2 * level }}>
         {comments.map((message) => (
           <MessageTree
@@ -116,16 +127,20 @@ type MessageOverviewProps = {
 
 function MessageOverview(props: MessageOverviewProps) {
   const { message } = props;
+	const date = message.createdAt.substring(0, 10).replaceAll("T", " ");
 
   return (
     <>
-      <CardHeader>
-        <Typography variant="h4">{message.title}</Typography>
-      </CardHeader>
+      <CardHeader
+        avatar={
+          <Avatar sx={{ bgcolor: red[500] }} aria-label="message">
+            {message.author[0]}
+          </Avatar>
+        }
+        title={message.title}
+        subheader={`${message.author} - ${date}`}
+      />
       <CardContent>
-        <Typography variant="h6">
-          {message.author} {message.createdAt}
-        </Typography>
         <Typography variant="body1">{message.content}</Typography>
       </CardContent>
     </>

@@ -1,1 +1,1 @@
-INSERT INTO author (username) VALUES ('REDACTED');
+INSERT INTO author (username) VALUES ('<REDACTED>');
