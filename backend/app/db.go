@@ -25,8 +25,8 @@ const (
 	REDACTED_USERNAME = "REDACTED"
 	// we don't actually sanitize user data that goes into the database in this
 	// app, but we can at least make a show of it with literals.
-	REDACTED_TITLE    = "&ltDELETED&gt"
-	REDACTED_CONTENT  = "&ltDELETED&gt"
+	REDACTED_TITLE   = "&ltDELETED&gt"
+	REDACTED_CONTENT = "&ltDELETED&gt"
 )
 
 func ConnectDb() Database {
@@ -48,12 +48,14 @@ func ConnectDb() Database {
 	return Database{Conn: db}
 }
 
-func (db *Database) getMessages() ([]Message, error) {
+func (db *Database) getRootMessages() ([]Message, error) {
 	var messages []Message
 	err := db.Conn.Select(&messages,
 		`SELECT m.id, m.parent_id, a.username, m.title, m.content, m.created_at
 		FROM message m
-		JOIN author a ON m.author_id = a.id`)
+		JOIN author a ON m.author_id = a.id
+		WHERE m.parent_id IS NULL
+		`)
 	if err != nil {
 		return nil, err
 	}

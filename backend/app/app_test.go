@@ -16,8 +16,8 @@ import (
 // badness: magic numbers, but I do not have time to do proper test setup and
 // teardown so I'm using the default migration for now.
 const (
-	NUM_MESSAGES_IN_DEFAULT_MIGRATION = 5
-	NUM_MESSAGES_ROOTED_IN_MESSAGE_1  = 4
+	NUM_ROOT_MESSAGES_IN_DEFAULT_MIGRATION = 2
+	NUM_MESSAGES_ROOTED_IN_MESSAGE_1       = 4
 )
 
 type AppTestSuite struct {
@@ -34,7 +34,7 @@ func (suite *AppTestSuite) AfterTest(suiteName, testName string) {
 	suite.db.Conn.MustExec("ROLLBACK")
 }
 
-func (suite *AppTestSuite) Test_GetMessages() {
+func (suite *AppTestSuite) Test_GetRootMessages() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "GET"
 	path := "/api/messages"
@@ -49,7 +49,7 @@ func (suite *AppTestSuite) Test_GetMessages() {
 	err = json.NewDecoder(response.Body).Decode(&messages)
 	suite.NoError(err)
 
-	suite.Len(messages, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
+	suite.Len(messages, NUM_ROOT_MESSAGES_IN_DEFAULT_MIGRATION)
 	suite.Equal(expectedStatus, response.Code)
 }
 
@@ -126,7 +126,7 @@ func (suite *AppTestSuite) Test_CreateRootMessage() {
 	suite.NoError(err)
 
 	suite.Equal(expectedStatus, response.Code)
-	suite.Greater(returnedMessage.Id, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
+	suite.Greater(returnedMessage.Id, NUM_ROOT_MESSAGES_IN_DEFAULT_MIGRATION)
 	suite.Equal(message.Title, returnedMessage.Title)
 	suite.Equal(message.Content, returnedMessage.Content)
 	suite.Equal(message.Author, returnedMessage.Author)
@@ -159,7 +159,7 @@ func (suite *AppTestSuite) Test_CreateComment() {
 	suite.NoError(err)
 
 	suite.Equal(expectedStatus, response.Code)
-	suite.Greater(returnedMessage.Id, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
+	suite.Greater(returnedMessage.Id, NUM_ROOT_MESSAGES_IN_DEFAULT_MIGRATION)
 	suite.Equal(message.ParentId, returnedMessage.ParentId)
 }
 

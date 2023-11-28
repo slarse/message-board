@@ -49,7 +49,7 @@ func (a *Application) setupRoutes(frontendPath string) {
 }
 
 func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
-	messages, err := a.db.getMessages()
+	messages, err := a.db.getRootMessages()
 	if err != nil {
 		log.Printf("Error getting messages from database: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
