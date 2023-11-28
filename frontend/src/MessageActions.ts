@@ -13,7 +13,7 @@ export type CreateMessageData = {
   author: string;
 };
 
-export type CreateCommentData = CreateMessageData & {
+export type CreateCommentData = Omit<CreateMessageData, "title"> & {
   parentId: number;
 };
 
@@ -37,10 +37,22 @@ const loadComments = async (messageId: number) => {
   return data;
 };
 
+const reply = async (data: CreateCommentData) => {
+	const response = await fetch(`/api/messages`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(data),
+	});
+	const responseData = await response.json();
+	return responseData;
+};
+
 export const defaultMessageActions: MessageActions = {
   loadRootMessages: loadRootMessages,
   loadComments: loadComments,
-  reply: (data: CreateCommentData) => Promise.resolve({} as MessageData),
+  reply: reply,
   newPost: (data: CreateMessageData) => Promise.resolve({} as MessageData),
   delete: (messageId: number) => Promise.resolve({} as MessageData),
 };

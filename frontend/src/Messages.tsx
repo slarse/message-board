@@ -48,15 +48,28 @@ function MessageTree(props: MessageTreeProps) {
   const { message, level, actions } = props;
   const [comments, setComments] = useState<MessageData[]>([]);
 
+  const loadComments = async () => {
+    const comments = await actions.loadComments(message.id);
+    setComments(comments);
+  };
+
+  const reply = async () => {
+    const comment = await actions.reply({
+      parentId: message.id,
+      content: `Re: ${message.content}`,
+      author: "Paul",
+    });
+    setComments([...comments, comment]);
+  };
+
   return (
-    <Card sx={{ marginBottom: 2, marginTop: 2 }}>
+    <Card variant="outlined" sx={{ marginBottom: 2, marginTop: 2 }}>
       <MessageOverview message={message} />
       <CardActions sx={{ margin: 2 }}>
-        <Button startIcon={<AddComment />}>Reply</Button>
-        <Button
-          startIcon={<AddCircle />}
-          onClick={() => actions.loadComments(message.id).then(setComments)}
-        >
+        <Button startIcon={<AddComment />} onClick={reply}>
+          Reply
+        </Button>
+        <Button startIcon={<AddCircle />} onClick={loadComments}>
           Load Comments
         </Button>
         <Button startIcon={<Delete />}>Delete</Button>
