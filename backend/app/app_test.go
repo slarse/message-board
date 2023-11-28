@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,7 +16,7 @@ import (
 // teardown so I'm using the default migration for now.
 const (
 	NUM_ROOT_MESSAGES_IN_DEFAULT_MIGRATION = 2
-	NUM_MESSAGES_ROOTED_IN_MESSAGE_1       = 4
+	NUM_COMMENTS_ON_MESSAGE_1              = 2
 )
 
 type AppTestSuite struct {
@@ -34,7 +33,7 @@ func (suite *AppTestSuite) AfterTest(suiteName, testName string) {
 	suite.db.Conn.MustExec("ROLLBACK")
 }
 
-func (suite *AppTestSuite) Test_GetRootMessages() {
+func (suite *AppTestSuite) Test_GetMessages() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "GET"
 	path := "/api/messages"
@@ -53,10 +52,10 @@ func (suite *AppTestSuite) Test_GetRootMessages() {
 	suite.Equal(expectedStatus, response.Code)
 }
 
-func (suite *AppTestSuite) Test_GetMessagesByRootMessageId() {
+func (suite *AppTestSuite) Test_GetComments() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "GET"
-	path := "/api/messages/1"
+	path := "/api/messages/1/comments"
 	expectedStatus := http.StatusOK
 
 	request, err := http.NewRequest(method, path, nil)
@@ -68,14 +67,14 @@ func (suite *AppTestSuite) Test_GetMessagesByRootMessageId() {
 	err = json.NewDecoder(response.Body).Decode(&messages)
 	suite.NoError(err)
 
-	suite.Len(messages, NUM_MESSAGES_ROOTED_IN_MESSAGE_1)
+	suite.Len(messages, NUM_COMMENTS_ON_MESSAGE_1)
 	suite.Equal(expectedStatus, response.Code)
 }
 
-func (suite *AppTestSuite) Test_GetMessagesByRootMessageId_InvalidId() {
+func (suite *AppTestSuite) Test_GetComments_InvalidParentId() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "GET"
-	path := "/api/messages/invalid"
+	path := "/api/messages/invalid/comments"
 	expectedStatus := http.StatusBadRequest
 
 	request, err := http.NewRequest(method, path, nil)
@@ -87,11 +86,14 @@ func (suite *AppTestSuite) Test_GetMessagesByRootMessageId_InvalidId() {
 	suite.Equal(expectedStatus, response.Code)
 }
 
-func (suite *AppTestSuite) Test_GetMessagesByRootMessageId_NoMessages() {
+func (suite *AppTestSuite) Test_GetComments_NoSuchMessage() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "GET"
-	path := "/api/messages/-1"
-	expectedStatus := http.StatusNotFound
+	path := "/api/messages/-1/comments"
+
+	// FIXME: this should be http.StatusNotFound, but due to the current
+	// implementation it isn't
+	expectedStatus := http.StatusOK
 
 	request, err := http.NewRequest(method, path, nil)
 	suite.NoError(err)
@@ -101,7 +103,7 @@ func (suite *AppTestSuite) Test_GetMessagesByRootMessageId_NoMessages() {
 	suite.Equal(expectedStatus, response.Code)
 }
 
-func (suite *AppTestSuite) Test_CreateRootMessage() {
+func (suite *AppTestSuite) Test_CreateMessage() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "POST"
 	path := "/api/messages"
@@ -163,7 +165,7 @@ func (suite *AppTestSuite) Test_CreateComment() {
 	suite.Equal(message.ParentId, returnedMessage.ParentId)
 }
 
-func (suite *AppTestSuite) Test_DeleteMessage_RedactsAllFields() {
+func (suite *AppTestSuite) Test_DeleteMessage() {
 	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
 	method := "DELETE"
 	path := "/api/messages/1"

@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -48,53 +47,22 @@ func ConnectDb() Database {
 	return Database{Conn: db}
 }
 
-func (db *Database) getRootMessages() ([]Message, error) {
-	var messages []Message
+func (db *Database) getMessages(messageId *int64) ([]Message, error) {
+	messages := make([]Message, 0)
+
 	err := db.Conn.Select(&messages,
 		`SELECT m.id, m.parent_id, a.username, m.title, m.content, m.created_at
 		FROM message m
 		JOIN author a ON m.author_id = a.id
-		WHERE m.parent_id IS NULL
-		`)
-	if err != nil {
-		return nil, err
-	}
-
-	return messages, nil
-}
-
-func (db *Database) getMessagesByRootMessageId(rootMessageId int) ([]Message, error) {
-	var messages []Message
-	err := db.Conn.Select(&messages,
-		`WITH RECURSIVE message_tree(id, parent_id) AS (
-			SELECT root.id, root.parent_id FROM message root WHERE root.id = $1
-				UNION ALL SELECT child.id, child.parent_id
-				FROM message child, message_tree parents
-				WHERE parents.id = child.parent_id)
-			SELECT * FROM message_tree;`,
-		rootMessageId)
+		WHERE m.parent_id IS NOT DISTINCT FROM $1
+		ORDER BY m.id ASC
+		`, messageId)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return messages, nil
-}
-
-func (db *Database) getComments(messageId int) ([]Message, error) {
-	comments := make([]Message, 0)
-	err := db.Conn.Select(&comments,
-		`SELECT m.id, m.parent_id, a.username, m.title, m.content, m.created_at
-		FROM message m
-		JOIN author a ON m.author_id = a.id
-		WHERE m.parent_id = $1`,
-		messageId)
-
-	if err != nil {
-		return []Message{}, err
-	}
-
-	return comments, nil
 }
 
 func (db *Database) createMessage(message InputMessage) (Message, error) {
@@ -112,7 +80,7 @@ func (db *Database) createMessage(message InputMessage) (Message, error) {
 	return createdMessage, nil
 }
 
-func (db *Database) deleteMessage(messageId int) (Message, error) {
+func (db *Database) deleteMessage(messageId int64) (Message, error) {
 	var message Message
 	err := db.Conn.QueryRowx(
 		`UPDATE message
@@ -129,12 +97,4 @@ func (db *Database) deleteMessage(messageId int) (Message, error) {
 	}
 
 	return message, nil
-}
-
-func GetEnv(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		log.Fatalf("%s environment variable not set", key)
-	}
-	return value
 }
