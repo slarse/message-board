@@ -1,5 +1,7 @@
 # Message Board
 
+![Message Board](images/message_board.jpg)
+
 A simple Reddit-inspired message board application where you can post messages
 and reply to existing ones.
 
