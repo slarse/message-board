@@ -127,9 +127,9 @@ func (suite *AppTestSuite) Test_CreateRootMessage() {
 
 	suite.Equal(expectedStatus, response.Code)
 	suite.Greater(returnedMessage.Id, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
-	suite.Equal(returnedMessage.Title, message.Title)
-	suite.Equal(returnedMessage.Content, message.Content)
-	suite.Equal(returnedMessage.Author, message.Author)
+	suite.Equal(message.Title, returnedMessage.Title)
+	suite.Equal(message.Content, returnedMessage.Content)
+	suite.Equal(message.Author, returnedMessage.Author)
 	suite.Nil(returnedMessage.ParentId)
 }
 
@@ -160,7 +160,7 @@ func (suite *AppTestSuite) Test_CreateComment() {
 
 	suite.Equal(expectedStatus, response.Code)
 	suite.Greater(returnedMessage.Id, NUM_MESSAGES_IN_DEFAULT_MIGRATION)
-	suite.Equal(returnedMessage.ParentId, message.ParentId)
+	suite.Equal(message.ParentId, returnedMessage.ParentId)
 }
 
 func (suite *AppTestSuite) Test_DeleteMessage_RedactsAllFields() {
