@@ -39,6 +39,7 @@ func (a *Application) setupRoutes(frontendPath string) {
 	a.Router.HandleFunc("/api/messages", a.getMessages).Methods("GET")
 	a.Router.HandleFunc("/api/messages", a.createMessage).Methods("POST")
 	a.Router.HandleFunc("/api/messages/{rootMessageId}", a.getMessagesByRootMessageId).Methods("GET")
+	a.Router.HandleFunc("/api/messages/{messageId}", a.deleteMessage).Methods("DELETE")
 
 	// Normally, we would serve the frontend from a static file server (e.g. an S3 bucket)
 	// with a CDN in front of it (e.g. CloudFront). But for this example we will
@@ -105,4 +106,28 @@ func (a *Application) createMessage(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(created)
+}
+
+func (a *Application) deleteMessage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	messageId, err := strconv.Atoi(vars["messageId"])
+	if err != nil {
+		log.Printf("Invalid messageId: %s", err)
+		http.Error(w, "Invalid messageId", http.StatusBadRequest)
+		return
+	}
+
+	message, err := a.db.deleteMessage(messageId)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		log.Printf("No message for id: %d", messageId)
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		log.Printf("Error deleting message: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(message)
 }

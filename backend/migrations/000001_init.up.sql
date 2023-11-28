@@ -23,6 +23,6 @@ INSERT INTO author (username) VALUES
 INSERT INTO message (parent_id, author_id, title, content) VALUES
 	(NULL, 1, 'First!', 'Hello World!'),
 	(NULL, 2, 'Second!', 'Hello John!'),
-	(1, 2, '', 'Hello John! Accidentally made a completely new post :)'),
+	(1, 2, '', 'Hello John! <b>Accidentally made</b> a completely new post :)'),
 	(3, 1, '', 'I get it. The UX of this board is kind of terrible.'),
 	(1, 3, '', 'Hi there, John!');

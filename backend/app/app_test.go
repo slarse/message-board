@@ -163,6 +163,41 @@ func (suite *AppTestSuite) Test_CreateComment() {
 	suite.Equal(returnedMessage.ParentId, message.ParentId)
 }
 
+func (suite *AppTestSuite) Test_DeleteMessage_RedactsAllFields() {
+	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
+	method := "DELETE"
+	path := "/api/messages/1"
+	expectedStatus := http.StatusOK
+
+	request, err := http.NewRequest(method, path, nil)
+	suite.NoError(err)
+	response := httptest.NewRecorder()
+	myApp.Router.ServeHTTP(response, request)
+
+	var message app.Message
+	err = json.NewDecoder(response.Body).Decode(&message)
+	suite.NoError(err)
+
+	suite.Equal(response.Code, expectedStatus)
+	suite.Equal(app.REDACTED_USERNAME, message.Author)
+	suite.Equal(app.REDACTED_TITLE, message.Title)
+	suite.Equal(app.REDACTED_CONTENT, message.Content)
+}
+
+func (suite *AppTestSuite) Test_DeleteMessage_NoMessage() {
+	myApp := app.NewApplication(mux.NewRouter(), suite.frontendPath, suite.db)
+	method := "DELETE"
+	path := "/api/messages/99"
+	expectedStatus := http.StatusNotFound
+
+	request, err := http.NewRequest(method, path, nil)
+	suite.NoError(err)
+	response := httptest.NewRecorder()
+	myApp.Router.ServeHTTP(response, request)
+
+	suite.Equal(expectedStatus, response.Code)
+}
+
 func TestAppTesSuite(t *testing.T) {
 	db := app.ConnectDb()
 	suite.Run(t, &AppTestSuite{db: db, frontendPath: "./mocks_index.html"})

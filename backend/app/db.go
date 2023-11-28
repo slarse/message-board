@@ -21,6 +21,12 @@ const (
 	DB_HOST_ENV     = "DB_HOST"
 	DB_PORT_ENV     = "DB_PORT"
 	DB_NAME_ENV     = "DB_NAME"
+
+	REDACTED_USERNAME = "REDACTED"
+	// we don't actually sanitize user data that goes into the database in this
+	// app, but we can at least make a show of it with literals.
+	REDACTED_TITLE    = "&ltDELETED&gt"
+	REDACTED_CONTENT  = "&ltDELETED&gt"
 )
 
 func ConnectDb() Database {
@@ -86,6 +92,25 @@ func (db *Database) createMessage(message InputMessage) (Message, error) {
 	}
 
 	return createdMessage, nil
+}
+
+func (db *Database) deleteMessage(messageId int) (Message, error) {
+	var message Message
+	err := db.Conn.QueryRowx(
+		`UPDATE message
+			SET
+				title = $1,
+				content = $2,
+				author_id = (SELECT id FROM author WHERE username = $3)
+			WHERE id = $4
+			RETURNING id, parent_id, $3 as username, title, content, created_at`,
+		REDACTED_TITLE, REDACTED_CONTENT, REDACTED_USERNAME, messageId).StructScan(&message)
+
+	if err != nil {
+		return Message{}, err
+	}
+
+	return message, nil
 }
 
 func GetEnv(key string) string {
