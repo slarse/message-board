@@ -12,74 +12,66 @@ import { useEffect, useState } from "react";
 import { MessageActions, MessageData } from "./MessageActions";
 
 type MessagesProps = {
-	actions: MessageActions;
-}
+  actions: MessageActions;
+};
 
 export function Messages(props: MessagesProps) {
   const [messages, setMessages] = useState<MessageData[]>([]);
 
-	const { actions } = props;
+  const { actions } = props;
 
   useEffect(() => {
-		actions.loadRootMessages().then(setMessages);
+    actions.loadRootMessages().then(setMessages);
   }, []);
 
-  const rootMessages = messages.filter(
-    (message) => message.parentId === undefined,
-  );
-  const comments = buildCommentsByMessageId(messages);
-
   return (
-    <MessageTree rootMessages={rootMessages} comments={comments} level={1} />
+    <Box>
+      {messages.map((message) => (
+        <MessageTree
+          key={message.id}
+          message={message}
+          actions={actions}
+          level={1}
+        />
+      ))}
+    </Box>
   );
-}
-
-type CommentsByMessageId = Map<number, MessageData[]>;
-
-function buildCommentsByMessageId(messages: MessageData[]): CommentsByMessageId {
-  const commentsByMessageId = new Map();
-  for (const message of messages) {
-    if (message.parentId === undefined) {
-      continue;
-    }
-
-    const comments = commentsByMessageId.get(message.parentId) ?? [];
-    comments.push(message);
-    commentsByMessageId.set(message.parentId, comments);
-  }
-
-  return commentsByMessageId;
 }
 
 type MessageTreeProps = {
-  rootMessages: MessageData[];
-  comments: CommentsByMessageId;
+  message: MessageData;
   level: number;
+  actions: MessageActions;
 };
 
 function MessageTree(props: MessageTreeProps) {
-  const { rootMessages, comments, level } = props;
+  const { message, level, actions } = props;
+  const [comments, setComments] = useState<MessageData[]>([]);
 
-  return rootMessages.length == 0 ? null : (
-    <Box>
-      {rootMessages.map((message) => (
-        <Card sx={{ marginBottom: 2, marginTop: 2 }}>
-          <MessageOverview message={message} />
-          <CardActions sx={{ margin: 2 }}>
-            <Button startIcon={<AddComment />}>Reply</Button>
-            <Button startIcon={<AddCircle />}>Load Comments</Button>
-            <Button startIcon={<Delete />}>Delete</Button>
-          </CardActions>
-          <Card sx={{ paddingLeft: 2 * level }}>
-            <MessageTree
-              rootMessages={comments.get(message.id) || []}
-              comments={comments}
-              level={level + 1}
-            />
-          </Card>
-        </Card>
-      ))}
-    </Box>
+  return (
+    <Card sx={{ marginBottom: 2, marginTop: 2 }}>
+      <MessageOverview message={message} />
+      <CardActions sx={{ margin: 2 }}>
+        <Button startIcon={<AddComment />}>Reply</Button>
+        <Button
+          startIcon={<AddCircle />}
+          onClick={() => actions.loadComments(message.id).then(setComments)}
+        >
+          Load Comments
+        </Button>
+        <Button startIcon={<Delete />}>Delete</Button>
+      </CardActions>
+      <Card sx={{ paddingLeft: 2 * level, paddingRight: 2 * level }}>
+        {comments.map((message) => (
+          <MessageTree
+            key={message.id}
+            message={message}
+            level={level + 1}
+            actions={actions}
+          />
+        ))}
+      </Card>
+    </Card>
   );
 }
 type MessageOverviewProps = {
