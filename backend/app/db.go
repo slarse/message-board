@@ -21,11 +21,9 @@ const (
 	DB_PORT_ENV     = "DB_PORT"
 	DB_NAME_ENV     = "DB_NAME"
 
-	REDACTED_USERNAME = "REDACTED"
-	// we don't actually sanitize user data that goes into the database in this
-	// app, but we can at least make a show of it with literals.
-	REDACTED_TITLE   = "&ltDELETED&gt"
-	REDACTED_CONTENT = "&ltDELETED&gt"
+	REDACTED_USERNAME = "<REDACTED>"
+	REDACTED_TITLE   = "<DELETED>"
+	REDACTED_CONTENT = "<DELETED>"
 )
 
 func ConnectDb() Database {

@@ -18,7 +18,7 @@ export type CreateCommentData = Omit<CreateMessageData, "title"> & {
 };
 
 export type MessageActions = {
-  loadRootMessages: () => Promise<MessageData[]>;
+  loadMessages: () => Promise<MessageData[]>;
   loadComments: (messageId: number) => Promise<MessageData[]>;
   reply: (data: CreateCommentData) => Promise<MessageData>;
   newPost: (data: CreateMessageData) => Promise<MessageData>;
@@ -49,10 +49,18 @@ const reply = async (data: CreateCommentData) => {
 	return responseData;
 };
 
+const deleteMessage = async (messageId: number) => {
+	const response = await fetch(`/api/messages/${messageId}`, {
+		method: "DELETE",
+	});
+	const responseData = await response.json();
+	return responseData;
+};
+
 export const defaultMessageActions: MessageActions = {
-  loadRootMessages: loadRootMessages,
+  loadMessages: loadRootMessages,
   loadComments: loadComments,
   reply: reply,
   newPost: (data: CreateMessageData) => Promise.resolve({} as MessageData),
-  delete: (messageId: number) => Promise.resolve({} as MessageData),
+  delete: deleteMessage,
 };

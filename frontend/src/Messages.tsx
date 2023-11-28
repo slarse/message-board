@@ -21,8 +21,17 @@ export function Messages(props: MessagesProps) {
   const { actions } = props;
 
   useEffect(() => {
-    actions.loadRootMessages().then(setMessages);
+    actions.loadMessages().then(setMessages);
   }, []);
+
+  const onDelete = async (messageId: number) => {
+    const redactedMessage = await actions.delete(messageId);
+    setMessages(
+      messages.map((message) =>
+        message.id === messageId ? redactedMessage : message,
+      ),
+    );
+  };
 
   return (
     <Box>
@@ -32,6 +41,7 @@ export function Messages(props: MessagesProps) {
           message={message}
           actions={actions}
           level={1}
+          onDelete={() => onDelete(message.id)}
         />
       ))}
     </Box>
@@ -42,10 +52,11 @@ type MessageTreeProps = {
   message: MessageData;
   level: number;
   actions: MessageActions;
+  onDelete: () => Promise<void>;
 };
 
 function MessageTree(props: MessageTreeProps) {
-  const { message, level, actions } = props;
+  const { message, level, actions, onDelete } = props;
   const [comments, setComments] = useState<MessageData[]>([]);
 
   const loadComments = async () => {
@@ -62,6 +73,15 @@ function MessageTree(props: MessageTreeProps) {
     setComments([...comments, comment]);
   };
 
+  const onDeleteComment = async (messageId: number) => {
+    const redactedComment = await actions.delete(messageId);
+    setComments(
+      comments.map((comment) =>
+        comment.id === messageId ? redactedComment : comment,
+      ),
+    );
+  };
+
   return (
     <Card variant="outlined" sx={{ marginBottom: 2, marginTop: 2 }}>
       <MessageOverview message={message} />
@@ -72,7 +92,9 @@ function MessageTree(props: MessageTreeProps) {
         <Button startIcon={<AddCircle />} onClick={loadComments}>
           Load Comments
         </Button>
-        <Button startIcon={<Delete />}>Delete</Button>
+        <Button startIcon={<Delete />} onClick={onDelete}>
+          Delete
+        </Button>
       </CardActions>
       <Card sx={{ paddingLeft: 2 * level, paddingRight: 2 * level }}>
         {comments.map((message) => (
@@ -81,6 +103,7 @@ function MessageTree(props: MessageTreeProps) {
             message={message}
             level={level + 1}
             actions={actions}
+            onDelete={() => onDeleteComment(message.id)}
           />
         ))}
       </Card>
