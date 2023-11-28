@@ -81,6 +81,22 @@ func (db *Database) getMessagesByRootMessageId(rootMessageId int) ([]Message, er
 	return messages, nil
 }
 
+func (db *Database) getComments(messageId int) ([]Message, error) {
+	comments := make([]Message, 0)
+	err := db.Conn.Select(&comments,
+		`SELECT m.id, m.parent_id, a.username, m.title, m.content, m.created_at
+		FROM message m
+		JOIN author a ON m.author_id = a.id
+		WHERE m.parent_id = $1`,
+		messageId)
+
+	if err != nil {
+		return []Message{}, err
+	}
+
+	return comments, nil
+}
+
 func (db *Database) createMessage(message InputMessage) (Message, error) {
 	var createdMessage Message
 	err := db.Conn.QueryRowx(

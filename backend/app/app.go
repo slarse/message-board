@@ -37,6 +37,7 @@ func NewApplication(r *mux.Router, frontendPath string, db Database) *Applicatio
 func (a *Application) setupRoutes(frontendPath string) {
 	a.Router.HandleFunc("/api/health", a.getHealth).Methods("GET")
 	a.Router.HandleFunc("/api/messages", a.getMessages).Methods("GET")
+	a.Router.HandleFunc("/api/messages/{messageId}/comments", a.getComments).Methods("GET")
 	a.Router.HandleFunc("/api/messages", a.createMessage).Methods("POST")
 	a.Router.HandleFunc("/api/messages/{rootMessageId}", a.getMessagesByRootMessageId).Methods("GET")
 	a.Router.HandleFunc("/api/messages/{messageId}", a.deleteMessage).Methods("DELETE")
@@ -57,6 +58,25 @@ func (a *Application) getMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(messages)
+}
+
+func (a *Application) getComments(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	messageId, err := strconv.Atoi(vars["messageId"])
+	if err != nil {
+		log.Printf("Invalid messageId: %s", err)
+		http.Error(w, "Invalid messageId", http.StatusBadRequest)
+		return
+	}
+
+	comments, err := a.db.getComments(messageId)
+	if err != nil {
+		log.Printf("Error getting comments from database: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(comments)
 }
 
 func (a *Application) getMessagesByRootMessageId(w http.ResponseWriter, r *http.Request) {
