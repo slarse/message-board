@@ -1,4 +1,4 @@
-.PHONY: run-local clean create-migration start start-db-only stop build test-backend
+.PHONY: run-local clean create-migration start start-db-only stop build test-backend dist-watch
 
 export POSTGRES_USER ?= postgres
 export POSTGRES_PASSWORD ?= postgres
@@ -26,6 +26,9 @@ dist:
 		&& npm run build
 	mv frontend/dist dist/message-board-frontend
 	go build -C backend -o "${CURDIR}/dist/message-board-backend"
+
+dist-watch:
+	find ./backend/app ./frontend/src -type f | entr -s 'make clean dist'
 
 run-local: dist start-db-only
 	env MESSAGE_BOARD_FRONTEND_PATH="${CURDIR}/dist/message-board-frontend" PORT=8000 \

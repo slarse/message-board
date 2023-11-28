@@ -9,14 +9,19 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { MessageActions, MessageData } from "./MessageActions";
 
-export function Messages() {
+type MessagesProps = {
+	actions: MessageActions;
+}
+
+export function Messages(props: MessagesProps) {
   const [messages, setMessages] = useState<MessageData[]>([]);
 
+	const { actions } = props;
+
   useEffect(() => {
-    fetch("/api/messages")
-      .then((response) => response.json())
-      .then((data) => setMessages(data));
+		actions.loadRootMessages().then(setMessages);
   }, []);
 
   const rootMessages = messages.filter(
@@ -77,16 +82,6 @@ function MessageTree(props: MessageTreeProps) {
     </Box>
   );
 }
-
-type MessageData = {
-  id: number;
-  parentId?: number;
-  content: string;
-  title: string;
-  author: string;
-  createdAt: string;
-};
-
 type MessageOverviewProps = {
   message: MessageData;
 };
